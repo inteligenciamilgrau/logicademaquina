@@ -1,0 +1,601 @@
+import React, { useState, useRef } from 'react';
+import { Plus, Trash2, RefreshCw, Copy, Check, Save, Brain, BookOpen, Settings, Play, Download, Upload, FileJson, Archive } from 'lucide-react';
+
+// --- CONFIGURAÇÃO INICIAL E DADOS PADRÃO ---
+
+const DEFAULT_NOUNS = [
+  "Polivature", "Pricolatus", "Gromulon", "Xylophig", "Dratini", 
+  "Morbalt", "Frelimo", "Quibble", "Zarplan", "Vorp", "GlipGlop"
+];
+
+// Removido "estrupe", adicionado "brolha"
+const DEFAULT_VERBS = [
+  "glarinha", "mirlita", "frunfa", "zazula", "brolha",
+  "cromita", "blangue", "tropisca", "vlora", "daxila"
+];
+
+// Removido "Frenético"
+const DEFAULT_ADJECTIVES = [
+  "Vultuoso", "Fladim", "Grugulento", "Crispado", "Pluvitante", 
+  "Treficado", "Lúmbido", "Sornento", "Vigoso"
+];
+
+const DEFAULT_NAMES = [
+  "Tibúrlio", "Gortrudes", "Astromildo", "Valdomarco", "Zunaide", 
+  "Krelm", "Vrixo", "Jorla", "Mingu", "Plúnio"
+];
+
+// Removido "Vale Grugulento", adicionado "Fenda Glártea"
+const DEFAULT_LOCATIONS = [
+  "no Estrombo", "na Fresta de Zul", "na Fenda Glártea", "na Orla de Vrix", 
+  "em Plunio", "no Setor Mumbado", "na Zona Lúmbida", "no Pico Blangue"
+];
+
+// Exemplo de Lógica: Silogismo Hipotético (Cadeia)
+const DEFAULT_TEMPLATE = {
+  name: "Cadeia Causal Simples",
+  premises: [
+    "Toda vez que um {S1} {V1} {L1}, ele fica {A1}.",
+    "Se algo fica {A1}, ele imediatamente {V2}.",
+    "{N1} é um {S1} e acabou de {V1} {L1}."
+  ],
+  question: "O que vai acontecer com {N1}?",
+  answer: "{N1} vai {V2} (pois ficou {A1})."
+};
+
+export default function App() {
+  // --- STATE MANAGEMENT ---
+  const [activeTab, setActiveTab] = useState('generator'); // 'generator' | 'dictionary' | 'editor'
+  
+  // Dicionários
+  const [nouns, setNouns] = useState(DEFAULT_NOUNS);
+  const [verbs, setVerbs] = useState(DEFAULT_VERBS);
+  const [adjs, setAdjs] = useState(DEFAULT_ADJECTIVES);
+  const [names, setNames] = useState(DEFAULT_NAMES);
+  const [locs, setLocs] = useState(DEFAULT_LOCATIONS);
+
+  // Template Atual
+  const [template, setTemplate] = useState(DEFAULT_TEMPLATE);
+
+  // Resultado Gerado
+  const [generatedOutput, setGeneratedOutput] = useState(null);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState(false);
+  const [importFeedback, setImportFeedback] = useState(null);
+
+  // Ref para input de arquivo
+  const fileInputRef = useRef(null);
+
+  // --- LOGIC ENGINE ---
+
+  // Função auxiliar para pegar item aleatório único
+  const getRandomUnique = (arr, count) => {
+    const shuffled = [...arr].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  };
+
+  const generateLogic = () => {
+    // 1. Identificar variáveis necessárias no template
+    const fullText = JSON.stringify(template);
+    
+    // Regex para encontrar {S1}, {S2}, {V1}, etc.
+    const extractVars = (prefix) => {
+      const regex = new RegExp(`{${prefix}(\\d+)}`, 'g');
+      const matches = [...fullText.matchAll(regex)];
+      const maxIndex = matches.reduce((max, m) => Math.max(max, parseInt(m[1])), 0);
+      return maxIndex;
+    };
+
+    const sCount = extractVars('S'); // Substantivos
+    const vCount = extractVars('V'); // Verbos
+    const aCount = extractVars('A'); // Adjetivos
+    const nCount = extractVars('N'); // Nomes
+    const lCount = extractVars('L'); // Locais
+
+    // 2. Selecionar palavras aleatórias únicas
+    const sWords = getRandomUnique(nouns, sCount || 1);
+    const vWords = getRandomUnique(verbs, vCount || 1);
+    const aWords = getRandomUnique(adjs, aCount || 1);
+    const nWords = getRandomUnique(names, nCount || 1);
+    const lWords = getRandomUnique(locs, lCount || 1);
+
+    // 3. Função de substituição
+    const replaceText = (text) => {
+      let newText = text;
+      sWords.forEach((word, i) => { newText = newText.replaceAll(`{S${i+1}}`, word); });
+      vWords.forEach((word, i) => { newText = newText.replaceAll(`{V${i+1}}`, word); });
+      aWords.forEach((word, i) => { newText = newText.replaceAll(`{A${i+1}}`, word); });
+      nWords.forEach((word, i) => { newText = newText.replaceAll(`{N${i+1}}`, word); });
+      lWords.forEach((word, i) => { newText = newText.replaceAll(`{L${i+1}}`, word); });
+      return newText;
+    };
+
+    // 4. Gerar output
+    const premises = template.premises.map(replaceText);
+    const question = replaceText(template.question);
+    const answer = replaceText(template.answer);
+
+    setGeneratedOutput({
+      premises,
+      question,
+      answer,
+      templateSnapshot: { ...template } // Salva uma cópia do template usado
+    });
+    setShowAnswer(false);
+  };
+
+  const copyToClipboard = () => {
+    if (!generatedOutput) return;
+    
+    // Formatação ajustada: Apenas Título, Texto e Pergunta.
+    const text = `
+--- DESAFIO LÓGICO ---
+${generatedOutput.premises.join('\n')}
+
+${generatedOutput.question}`.trim();
+    
+    // Método robusto para iframes usando execCommand
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    
+    // Garante que o textarea não seja visível
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '0';
+    document.body.appendChild(textArea);
+    
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 2000);
+      } else {
+        console.error('Falha ao copiar texto.');
+      }
+    } catch (err) {
+      console.error('Erro ao copiar:', err);
+    }
+    
+    document.body.removeChild(textArea);
+  };
+
+  // --- SAVE & LOAD SYSTEM ---
+
+  const handleSaveSession = () => {
+    const sessionData = {
+      type: 'LOGIGEN_SESSION',
+      version: 2,
+      timestamp: new Date().toISOString(),
+      dictionary: { nouns, verbs, adjs, names, locs },
+      template: template,
+      generatedOutput: generatedOutput
+    };
+
+    const blob = new Blob([JSON.stringify(sessionData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `logigen-sessao-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleLoadSession = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result);
+        
+        // Suporte para versão antiga (apenas dicionário) ou nova (sessão completa)
+        if (data.type === 'LOGIGEN_SESSION' || data.dictionary) {
+            // Carregar Dicionário
+            const dict = data.dictionary || data; // fallback para formato antigo
+            if (dict.nouns && Array.isArray(dict.nouns)) setNouns(dict.nouns);
+            if (dict.verbs && Array.isArray(dict.verbs)) setVerbs(dict.verbs);
+            if (dict.adjs && Array.isArray(dict.adjs)) setAdjs(dict.adjs);
+            if (dict.names && Array.isArray(dict.names)) setNames(dict.names);
+            if (dict.locs && Array.isArray(dict.locs)) setLocs(dict.locs);
+
+            // Carregar Template/Lógica
+            if (data.template) {
+                setTemplate(data.template);
+            }
+
+            // Carregar Estado da Geração Anterior
+            if (data.generatedOutput) {
+                setGeneratedOutput(data.generatedOutput);
+            }
+
+            setImportFeedback("Sessão carregada com sucesso!");
+        } else {
+            // Tenta carregar formato legado direto
+            if (data.nouns) setNouns(data.nouns);
+            if (data.verbs) setVerbs(data.verbs);
+            setImportFeedback("Dicionário antigo carregado.");
+        }
+        
+        setTimeout(() => setImportFeedback(null), 3000);
+
+      } catch (err) {
+        console.error("Erro ao carregar:", err);
+        setImportFeedback("Erro: Arquivo inválido.");
+      }
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // --- UI COMPONENTS ---
+
+  const DictionaryEditor = ({ title, items, setItems, prefix }) => {
+    const [newItem, setNewItem] = useState("");
+
+    const add = () => {
+      if (newItem.trim()) {
+        setItems([...items, newItem.trim()]);
+        setNewItem("");
+      }
+    };
+
+    const remove = (idx) => {
+      const n = [...items];
+      n.splice(idx, 1);
+      setItems(n);
+    };
+
+    return (
+      <div className="bg-slate-800 p-4 rounded-lg mb-4 border border-slate-700">
+        <h3 className="text-sm font-bold text-slate-400 uppercase mb-2 flex justify-between">
+          {title} <span className="text-xs bg-slate-700 px-2 py-0.5 rounded text-blue-300">Variável: {`{${prefix}n}`}</span>
+        </h3>
+        <div className="flex gap-2 mb-3">
+          <input 
+            type="text" 
+            value={newItem}
+            onChange={(e) => setNewItem(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && add()}
+            className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-1 text-slate-200 focus:outline-none focus:border-blue-500"
+            placeholder="Nova palavra..."
+          />
+          <button onClick={add} className="bg-blue-600 hover:bg-blue-500 text-white p-1 rounded transition-colors">
+            <Plus size={20} />
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+          {items.map((item, idx) => (
+            <span key={idx} className="bg-slate-700 text-slate-200 px-2 py-1 rounded text-sm flex items-center gap-2 group">
+              {item}
+              <button onClick={() => remove(idx)} className="text-slate-500 hover:text-red-400">
+                <Trash2 size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30">
+      
+      {/* HEADER */}
+      <header className="bg-slate-900 border-b border-slate-800 p-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-2 rounded-lg">
+              <Brain className="text-white" size={28} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">LogiGen <span className="text-blue-500">Pro</span></h1>
+              <p className="text-slate-400 text-sm">Gerador de Raciocínio Lógico Sintético</p>
+            </div>
+          </div>
+          
+          <div className="flex bg-slate-800 p-1 rounded-lg">
+            <button 
+              onClick={() => setActiveTab('generator')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'generator' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              <div className="flex items-center gap-2"><Play size={16}/> Gerar</div>
+            </button>
+            <button 
+              onClick={() => setActiveTab('editor')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'editor' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              <div className="flex items-center gap-2"><Settings size={16}/> Editar Lógica</div>
+            </button>
+            <button 
+              onClick={() => setActiveTab('dictionary')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'dictionary' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              <div className="flex items-center gap-2"><Archive size={16}/> Dados</div>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto p-6">
+        
+        {/* --- TAB: GENERATOR --- */}
+        {activeTab === 'generator' && (
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-1 space-y-4">
+              <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-xl">
+                <h2 className="font-semibold text-lg mb-4 text-white">Controles</h2>
+                <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                  Gere uma nova instância baseada no template atual usando palavras aleatórias.
+                </p>
+                
+                <button 
+                  onClick={generateLogic}
+                  className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-blue-900/20 active:scale-95"
+                >
+                  <RefreshCw size={20} />
+                  Gerar Novo Puzzle
+                </button>
+
+                {/* BOTÃO DE COPIAR AGORA AQUI */}
+                {generatedOutput && (
+                    <button 
+                      onClick={copyToClipboard}
+                      className="w-full mt-3 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-all border border-slate-700 shadow-md hover:shadow-slate-900/20 active:scale-95"
+                    >
+                      {copyFeedback ? <Check size={20} className="text-emerald-400" /> : <Copy size={20} />}
+                      {copyFeedback ? "Copiado!" : "Copiar Desafio"}
+                    </button>
+                )}
+
+                <div className="mt-6 p-4 bg-slate-800/50 rounded-lg border border-slate-800">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase mb-2">Template Ativo</h3>
+                  <p className="text-sm font-medium text-slate-300 truncate">{template.name}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2">
+              {!generatedOutput ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-600 bg-slate-900/50 rounded-xl border border-slate-800 border-dashed min-h-[400px]">
+                  <Brain size={64} className="mb-4 opacity-20" />
+                  <p>Clique em "Gerar Novo Puzzle" para começar</p>
+                </div>
+              ) : (
+                <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-2xl overflow-hidden">
+                  <div className="p-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                  <div className="p-8 space-y-8">
+                    
+                    {/* Premissas */}
+                    <div>
+                      <h3 className="text-blue-400 text-sm font-bold uppercase tracking-wider mb-3">Contexto & Regras</h3>
+                      <div className="space-y-3 bg-slate-950/50 p-6 rounded-lg border border-slate-800">
+                        {generatedOutput.premises.map((p, i) => (
+                          <div key={i} className="flex gap-3">
+                            <span className="text-slate-500 font-mono">{i+1}.</span>
+                            <p className="text-lg text-slate-200 leading-relaxed">{p}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Pergunta */}
+                    <div>
+                      <h3 className="text-purple-400 text-sm font-bold uppercase tracking-wider mb-3">O Desafio</h3>
+                      <div className="p-6 bg-slate-800 rounded-lg border-l-4 border-purple-500">
+                        <p className="text-xl font-medium text-white">{generatedOutput.question}</p>
+                      </div>
+                    </div>
+
+                    {/* Resposta */}
+                    <div>
+                      <div className="flex justify-between items-end mb-3">
+                        <h3 className="text-emerald-400 text-sm font-bold uppercase tracking-wider">Conclusão Lógica</h3>
+                        <button 
+                          onClick={() => setShowAnswer(!showAnswer)}
+                          className="text-xs text-slate-400 hover:text-white underline"
+                        >
+                          {showAnswer ? "Ocultar Resposta" : "Mostrar Resposta"}
+                        </button>
+                      </div>
+                      
+                      {showAnswer ? (
+                        <div className="p-6 bg-emerald-900/20 rounded-lg border border-emerald-900 animate-in fade-in slide-in-from-top-2">
+                          <p className="text-lg text-emerald-100">{generatedOutput.answer}</p>
+                        </div>
+                      ) : (
+                        <div className="h-20 bg-slate-800/50 rounded-lg flex items-center justify-center border border-slate-800 border-dashed">
+                          <span className="text-slate-600 text-sm italic">Resposta oculta</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Lógica Estrutural Display */}
+                    <div className="pt-6 border-t border-slate-800">
+                      <h3 className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Settings size={14}/> Estrutura Lógica (Template)
+                      </h3>
+                      <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 font-mono text-sm text-slate-400 space-y-2">
+                         <div>
+                            <span className="text-slate-600 block text-xs mb-1">Premissas:</span>
+                            {generatedOutput.templateSnapshot.premises.map((p, i) => (
+                              <div key={i} className="pl-2 border-l-2 border-slate-800">{p}</div>
+                            ))}
+                         </div>
+                         <div className="mt-2">
+                            <span className="text-slate-600 block text-xs mb-1">Pergunta:</span>
+                            <div className="pl-2 border-l-2 border-slate-800">{generatedOutput.templateSnapshot.question}</div>
+                         </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* --- TAB: EDITOR --- */}
+        {activeTab === 'editor' && (
+          <div className="grid md:grid-cols-2 gap-8">
+             <div className="space-y-6">
+                <div className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+                  <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Settings className="text-blue-400"/> Estrutura Lógica
+                  </h2>
+                  <p className="text-slate-400 text-sm mb-6">
+                    Defina as regras usando variáveis. O sistema substituirá as variáveis por palavras do dicionário mantendo a consistência.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nome do Cenário</label>
+                      <input 
+                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white"
+                        value={template.name}
+                        onChange={(e) => setTemplate({...template, name: e.target.value})}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Premissas (Regras)</label>
+                      <div className="space-y-2">
+                        {template.premises.map((premise, idx) => (
+                          <div key={idx} className="flex gap-2">
+                            <input 
+                              className="flex-1 bg-slate-950 border border-slate-700 rounded p-2 text-slate-200 font-mono text-sm"
+                              value={premise}
+                              onChange={(e) => {
+                                const newPremises = [...template.premises];
+                                newPremises[idx] = e.target.value;
+                                setTemplate({...template, premises: newPremises});
+                              }}
+                            />
+                            <button 
+                              onClick={() => {
+                                const newPremises = template.premises.filter((_, i) => i !== idx);
+                                setTemplate({...template, premises: newPremises});
+                              }}
+                              className="text-slate-600 hover:text-red-400"
+                            >
+                              <Trash2 size={18}/>
+                            </button>
+                          </div>
+                        ))}
+                        <button 
+                          onClick={() => setTemplate({...template, premises: [...template.premises, ""]})}
+                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium mt-2"
+                        >
+                          <Plus size={14} /> Adicionar Premissa
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Pergunta</label>
+                      <input 
+                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white font-mono text-sm"
+                        value={template.question}
+                        onChange={(e) => setTemplate({...template, question: e.target.value})}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Resposta Esperada</label>
+                      <textarea 
+                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white font-mono text-sm h-20"
+                        value={template.answer}
+                        onChange={(e) => setTemplate({...template, answer: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                </div>
+             </div>
+
+             <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-800 h-fit">
+                <h3 className="font-bold text-white mb-4">Guia de Variáveis</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-start gap-3 p-3 bg-slate-900 rounded border border-slate-800">
+                    <code className="text-yellow-400 font-bold bg-slate-800 px-1 rounded">{`{S1}, {S2}...`}</code>
+                    <p className="text-slate-400">Substantivos (Criaturas, objetos). <br/>Ex: <i>Polivature, Gromulon</i>.</p>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-slate-900 rounded border border-slate-800">
+                    <code className="text-blue-400 font-bold bg-slate-800 px-1 rounded">{`{V1}, {V2}...`}</code>
+                    <p className="text-slate-400">Verbos (Ações). <br/>Ex: <i>Gira, brilha, cai</i>.</p>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-slate-900 rounded border border-slate-800">
+                    <code className="text-purple-400 font-bold bg-slate-800 px-1 rounded">{`{A1}, {A2}...`}</code>
+                    <p className="text-slate-400">Adjetivos (Estados). <br/>Ex: <i>Bratinado, Zonzo</i>.</p>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-slate-900 rounded border border-slate-800">
+                    <code className="text-green-400 font-bold bg-slate-800 px-1 rounded">{`{N1}, {N2}...`}</code>
+                    <p className="text-slate-400">Nomes Próprios (Sujeitos específicos). <br/>Ex: <i>Brigolo, Zorg</i>.</p>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-slate-900 rounded border border-slate-800">
+                    <code className="text-orange-400 font-bold bg-slate-800 px-1 rounded">{`{L1}, {L2}...`}</code>
+                    <p className="text-slate-400">Locais/Preposições. <br/>Ex: <i>no Pricolatus, na Nebulosa</i>.</p>
+                  </div>
+                </div>
+                
+                <div className="mt-6 p-4 bg-blue-900/20 border border-blue-900/50 rounded text-sm text-blue-200">
+                  <strong>Dica:</strong> Se você usar <code>{`{S1}`}</code> na premissa e novamente na pergunta, o sistema usará a <strong>mesma</strong> palavra gerada (ex: Polivature) em ambos os lugares, garantindo a consistência lógica.
+                </div>
+             </div>
+          </div>
+        )}
+
+        {/* --- TAB: DICTIONARY / DATA --- */}
+        {activeTab === 'dictionary' && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="col-span-full mb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 bg-slate-900 p-6 rounded-lg border border-slate-800">
+               <div className="flex-1">
+                 <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                    <Archive className="text-blue-400" />
+                    Gerenciamento de Dados & Sessão
+                 </h2>
+                 <p className="text-slate-400 mb-2">
+                    Aqui você pode editar as palavras inventadas. Use os botões à direita para salvar todo o seu progresso (palavras + estrutura lógica + último resultado).
+                 </p>
+                 {importFeedback && (
+                    <div className="text-emerald-400 text-sm font-medium animate-pulse">
+                        {importFeedback}
+                    </div>
+                 )}
+               </div>
+               
+               <div className="flex gap-2">
+                 <button 
+                  onClick={handleSaveSession}
+                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg border border-slate-700 text-sm font-medium transition-colors"
+                 >
+                   <Download size={16}/> Salvar Sessão Completa
+                 </button>
+                 <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg cursor-pointer text-sm font-medium shadow-lg hover:shadow-blue-500/20 transition-colors">
+                   <Upload size={16}/> Carregar Sessão
+                   <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    accept=".json" 
+                    onChange={handleLoadSession}
+                    className="hidden" 
+                   />
+                 </label>
+               </div>
+            </div>
+            
+            <DictionaryEditor title="Substantivos (Criaturas/Coisas)" items={nouns} setItems={setNouns} prefix="S" />
+            <DictionaryEditor title="Verbos (Ações)" items={verbs} setItems={setVerbs} prefix="V" />
+            <DictionaryEditor title="Adjetivos (Estados/Qualidades)" items={adjs} setItems={setAdjs} prefix="A" />
+            <DictionaryEditor title="Nomes Próprios" items={names} setItems={setNames} prefix="N" />
+            <DictionaryEditor title="Locais / Complementos" items={locs} setItems={setLocs} prefix="L" />
+          </div>
+        )}
+
+      </main>
+    </div>
+  );
+}
