@@ -2,6 +2,13 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
+  <!--
+    Regra de segurança (CSP): o navegador só aceita scripts, estilos, imagens e conexões
+    deste próprio site. Um <script src="https://..."> de fora é bloqueado: as bibliotecas
+    ficam em vendor/. O 'unsafe-inline' é exigido pelo import map e pelo Babel, que roda o
+    JSX traduzido como script inline.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>LogiGen Pro — Lógica de Máquina</title>
@@ -10,22 +17,23 @@
 
   <!--
     Página estática: roda direto no GitHub Pages, sem Node e sem build.
+    Todas as bibliotecas estão em vendor/ (versões e origem em vendor/versoes.json).
     - Tailwind (Play CDN) gera o CSS das classes no navegador.
-    - O import map diz de onde vêm 'react', 'react-dom/client' e 'lucide-react' (esm.sh).
-      O "?external=react" faz todos usarem o MESMO React, senão os hooks quebram.
+    - O import map diz de onde vêm 'react', 'react-dom/client' e 'lucide-react'.
+      Os três usam a MESMA cópia do React (vendor/esm/compartilhado-*.js), senão os hooks quebram.
     - O Babel traduz o JSX do <script type="text/babel"> lá embaixo.
   -->
-  <script src="https://cdn.tailwindcss.com/3.4.15"></script>
+  <script src="vendor/tailwindcss.js"></script>
   <script type="importmap">
   {
     "imports": {
-      "react": "https://esm.sh/react@18.3.1",
-      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?external=react",
-      "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react"
+      "react": "./vendor/esm/react.js",
+      "react-dom/client": "./vendor/esm/react-dom-client.js",
+      "lucide-react": "./vendor/esm/lucide-react.js"
     }
   }
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.2/babel.min.js"></script>
+  <script src="vendor/babel.min.js"></script>
 </head>
 <body class="bg-slate-950">
   <div id="root">

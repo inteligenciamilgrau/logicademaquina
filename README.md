@@ -11,11 +11,19 @@ Gerador de desafios de raciocínio lógico com palavras inventadas. Você escrev
 
 O app inteiro está no `index.html`. É React escrito em JSX, mas não precisa de Node nem de build:
 
-- React, React DOM e os ícones (lucide-react) vêm do esm.sh por um import map;
+- React, React DOM e os ícones (lucide-react) são carregados por um import map;
 - o Tailwind (Play CDN) gera o CSS no navegador;
 - o Babel traduz o JSX na hora em que a página abre.
 
 Por isso o GitHub Pages publica o arquivo como está, direto da branch `main`. O arquivo `.nojekyll` desliga o Jekyll, que não tem nada a fazer aqui.
+
+## Bibliotecas e segurança
+
+Todas as bibliotecas ficam na pasta `vendor/`, servidas pelo próprio site: a página não carrega nada de CDN de terceiros. Uma regra de segurança (CSP) no `index.html` faz o navegador recusar qualquer script ou conexão de fora do site. Se um dia alguém colocar um `<script src="https://...">`, ele não vai carregar.
+
+- `vendor/versoes.json`: versão de cada biblioteca, a integridade publicada no npm e o sha256 de cada arquivo.
+- `vendor/licencas/`: a licença de cada biblioteca.
+- `vendor/atualizar-libs.mjs`: refaz a pasta a partir dos pacotes oficiais do npm (`node vendor/atualizar-libs.mjs`). Serve para trocar de versão ou para conferir que os arquivos batem com os oficiais. O site não precisa dele para funcionar.
 
 ## Rodar localmente
 

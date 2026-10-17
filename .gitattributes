@@ -1,0 +1,3 @@
+# Bibliotecas de terceiros: guardadas byte a byte, sem conversão de fim de linha,
+# para o sha256 registrado em vendor/versoes.json bater com o arquivo em qualquer sistema.
+vendor/** -text
