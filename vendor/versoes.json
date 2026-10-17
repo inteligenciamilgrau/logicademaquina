@@ -21,8 +21,8 @@
       "integridade_npm": "sha512-i2VbegsRfwa9yq3xmfDX3tG2yh9K0cCqwpSyVG2nPxifh0EOnucAZUeO/g4lW2Zfg03aPJNtPfxQbDHzXc7H+w=="
     },
     "esbuild": {
-      "versao": "0.24.0",
-      "integridade_npm": "sha512-FuLPevChGDshgSicjisSooU0cemp/sGXR841D5LHMB7mTVOmsEHcAxaH3irL53+8YDIeVNQEySh4DaYU/iuPqQ=="
+      "versao": "0.28.2",
+      "integridade_npm": "sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA=="
     },
     "tailwindcss (Play CDN)": {
       "versao": "3.4.15",
@@ -31,10 +31,10 @@
   },
   "arquivos": {
     "babel.min.js": "sha256-EtnmESXAdjVyNSArTezU9Jv00Fc4b192HMuhFpNGFo4=",
-    "esm/compartilhado-WWINSVLF.js": "sha256-PnsrLFNI1gh7zzPzg2IxtimixkpynwtjOfAE4iaYgds=",
-    "esm/lucide-react.js": "sha256-h9jpT9DeezSkxnCLYs2r45GYbYC3hMH5Z9kZpbsqKeM=",
-    "esm/react-dom-client.js": "sha256-jwtRwn6CtKXLOrvzMi/3xZRdh0w9nqajyBX8NeMGv3I=",
-    "esm/react.js": "sha256-L6y2aekKgtQ9d4O6TbjcYFqIRd5xak2UWV+T5XkwDjE=",
+    "esm/compartilhado-Q2NRXEXV.js": "sha256-ISLJpW2+uq2IyiPQHajR5E/OuB0C0vJ5zKhiZEABKS4=",
+    "esm/lucide-react.js": "sha256-O2C0TJnKe84dQs8O4NuPQp4VpwLny/fDVJQCXoSqyws=",
+    "esm/react-dom-client.js": "sha256-V0mxEPGXpeARtClgL2kF6IGfyZEMlf6JDYhehO+x4rc=",
+    "esm/react.js": "sha256-K0HZht/Q3BxI+6aJ2YaCf11p5f4NVZKvbGfDod2ZzoQ=",
     "licencas/@babel__standalone.txt": "sha256-EX2irw1M4P4cjhm1z/nc2Aat+XPTKNJ7EdREjE/yT3Y=",
     "licencas/lucide-react.txt": "sha256-HnKQs1KAoEhme78OurrBx/1Sp1MA6LKUasFlcVmX8rw=",
     "licencas/react-dom.txt": "sha256-UkEte8fOQVfqYou6rLiCngqcs8WPV/mRdhJryM8r/IU=",

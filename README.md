@@ -21,6 +21,7 @@ Por isso o GitHub Pages publica o arquivo como está, direto da branch `main`. O
 
 Todas as bibliotecas ficam na pasta `vendor/`, servidas pelo próprio site: a página não carrega nada de CDN de terceiros. Uma regra de segurança (CSP) no `index.html` faz o navegador recusar qualquer script ou conexão de fora do site. Se um dia alguém colocar um `<script src="https://...">`, ele não vai carregar.
 
+- `vendor/package.json` e `vendor/package-lock.json`: as versões exatas, inclusive das dependências indiretas, com a integridade de cada pacote. O GitHub lê esses arquivos para avisar quando sair uma falha de segurança numa dessas versões.
 - `vendor/versoes.json`: versão de cada biblioteca, a integridade publicada no npm e o sha256 de cada arquivo.
 - `vendor/licencas/`: a licença de cada biblioteca.
 - `vendor/atualizar-libs.mjs`: refaz a pasta a partir dos pacotes oficiais do npm (`node vendor/atualizar-libs.mjs`). Serve para trocar de versão ou para conferir que os arquivos batem com os oficiais. O site não precisa dele para funcionar.
@@ -30,7 +31,7 @@ Todas as bibliotecas ficam na pasta `vendor/`, servidas pelo próprio site: a p�
 Sirva a pasta com qualquer servidor estático e abra no navegador:
 
 ```
-python -m http.server 8000
+python -m http.server 8000 --bind 127.0.0.1
 ```
 
-Depois acesse http://localhost:8000.
+Depois acesse http://localhost:8000. O `--bind 127.0.0.1` deixa o servidor visível só no seu computador; sem ele, qualquer pessoa na mesma rede (o Wi-Fi de um café, por exemplo) consegue ver a pasta enquanto ele estiver rodando.
